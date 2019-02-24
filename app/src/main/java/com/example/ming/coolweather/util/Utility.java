@@ -1,6 +1,7 @@
 package com.example.ming.coolweather.util;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.example.ming.coolweather.db.City;
 import com.example.ming.coolweather.db.County;
@@ -46,10 +47,11 @@ public class Utility {
         if(!TextUtils.isEmpty(response)){
             try {
                 JSONArray allCities  = new JSONArray(response);
-                for(int i = 1; i < allCities.length(); i++){
+                for(int i = 0; i < allCities.length(); i++){
                     JSONObject cityObject = allCities.getJSONObject(i);
                     City city = new City();
                     city.setCityName(cityObject.getString("name"));
+                    Log.d("handleCityResponse", cityObject.getString("name"));
                     city.setCityCode(cityObject.getInt("id"));
                     city.setProvinceId(provinceId);
                     city.save();
@@ -62,6 +64,12 @@ public class Utility {
         return false;
     }
 
+    /**
+     * 解析和处理服务器返回的县级数据
+     * @param response
+     * @param cityId
+     * @return
+     */
     public static boolean handleCountyResponse(String response, int cityId){
         if(!TextUtils.isEmpty(response)){
             try {
@@ -70,7 +78,8 @@ public class Utility {
                     JSONObject countyObject = allCounties.getJSONObject(i);
                     County county = new County();
                     county.setCountyName(countyObject.getString("name"));
-                    county.setWeatherId(countyObject.getString("weather"));
+                    Log.d("handleCountyResponse", countyObject.getString("name"));
+                    county.setWeatherId(countyObject.getString("weather_id"));
                     county.setCityId(cityId);
                     county.save();
                 }

@@ -5,6 +5,7 @@ import android.app.Fragment;
 import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +22,7 @@ import com.example.ming.coolweather.db.Province;
 import com.example.ming.coolweather.util.Httputil;
 import com.example.ming.coolweather.util.Utility;
 
+import org.litepal.LitePal;
 import org.litepal.crud.DataSupport;
 
 import java.io.IOException;
@@ -141,7 +143,7 @@ public class ChooseAreaFragment extends Fragment {
             listView.setSelection(0);
             currentLevel = LEVEL_PROVINCE;
         } else {
-            String address = "http://guolin.tech/api.china";
+            String address = "http://guolin.tech/api/china";
             queryFromServer(address, "province");
         }
     }
@@ -152,7 +154,7 @@ public class ChooseAreaFragment extends Fragment {
     private void queryCities() {
         titleTv.setText(selectedProvince.getProvinceName());
         backBtn.setVisibility(View.VISIBLE);
-        cityList = DataSupport.where("province = ?", String.valueOf(selectedProvince.getId()))
+        cityList = DataSupport.where("provinceid = ?", String.valueOf(selectedProvince.getId()))
                 .find(City.class);
         if (cityList.size() > 0) {
             dataList.clear();
@@ -175,7 +177,7 @@ public class ChooseAreaFragment extends Fragment {
     public void queryCounties(){
         titleTv.setText(selectedCity.getCityName());
         backBtn.setVisibility(View.VISIBLE);
-        countyList = DataSupport.where("city = ?", String.valueOf(selectedCity.getId())).find(County.class);
+        countyList = DataSupport.where("cityid = ?", String.valueOf(selectedCity.getId())).find(County.class);
         if (countyList.size() > 0) {
             dataList.clear();
             for(County county : countyList){
@@ -189,6 +191,7 @@ public class ChooseAreaFragment extends Fragment {
             int cityCode = selectedCity.getCityCode();
             String address = "http://guolin.tech/api/china/" + provinceCode
                     + "/" + cityCode;
+            Log.d("queryCounties", address);
             queryFromServer(address, "county");
         }
     }
