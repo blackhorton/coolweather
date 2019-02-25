@@ -1,0 +1,173 @@
+package com.example.ming.coolweather;
+
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
+import android.support.v7.app.AppCompatActivity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.example.ming.coolweather.gson.Forecast;
+import com.example.ming.coolweather.gson.Weather;
+import com.example.ming.coolweather.util.HttpUtil;
+import com.example.ming.coolweather.util.Utility;
+
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
+
+public class WeatherActivity extends AppCompatActivity {
+
+    private ScrollView weatherLayout;
+
+    private TextView titleCityTv;
+
+    private TextView titleUpdateTimeTv;
+
+    private TextView degreeTv;
+
+    private TextView weatherInfoTv;
+
+    private LinearLayout forecastLayout;
+
+    private TextView aqiTv;
+
+    private TextView pm25Tv;
+
+    private TextView comfortTv;
+
+    private TextView carWashTv;
+
+    private TextView sportTv;
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.module_activity_weather);
+        // 初始化各控件
+        weatherLayout = findViewById(R.id.sv_weather_layout);
+        titleCityTv = findViewById(R.id.tv_title_city);
+        titleUpdateTimeTv = findViewById(R.id.tv_title_update_time);
+        degreeTv = findViewById(R.id.tv_degree);
+        weatherInfoTv = findViewById(R.id.tv_weather_info);
+        forecastLayout = findViewById(R.id.forecast_layout);
+        aqiTv = findViewById(R.id.tv_aqi);
+        pm25Tv = findViewById(R.id.tv_pm25);
+        comfortTv = findViewById(R.id.tv_comfort);
+        carWashTv = findViewById(R.id.tv_car_wash);
+        sportTv = findViewById(R.id.tv_sport);
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        String weatherString = prefs.getString("weather", null);
+        if(weatherString != null) {
+            //有缓存时直接解析天气数据
+            Weather weather = Utility.handleWeatherResponse(weatherString);
+            showWeatherInfo(weather);
+        } else {
+            //无缓存时去服务器查询天气
+            String weatherId = getIntent().getStringExtra("weather_id");
+            weatherLayout.setVisibility(View.INVISIBLE);
+            requestWeather(weatherId);
+        }
+    }
+
+    /**
+     * 根据天气id请求城市天气信息
+     * @param weatherId
+     */
+    private void requestWeather(final String weatherId) {
+
+        String weatherUrl = "http://guolin.tech/api/weather?cityid=" +
+                weatherId + "&key=bc0418b57b2d4918819d3974ac1285d9";
+        HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(WeatherActivity.this,
+                                "获取天气信息失败", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                final String responseText = response.body().string();
+                final Weather weather = Utility.handleWeatherResponse(responseText);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (weather != null && "ok".equals(weather.status)) {
+                            SharedPreferences.Editor editor = PreferenceManager.
+                                    getDefaultSharedPreferences(WeatherActivity.this).edit();
+                            editor.putString("weather", responseText);
+                            editor.apply();
+                            showWeatherInfo(weather);
+                        } else {
+                            Toast.makeText(WeatherActivity.this, "获取天气信息失败",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 处理并展示Weather实体类中的数据
+     * @param weather
+     */
+    private void showWeatherInfo(Weather weather) {
+        String cityName = weather.basic.CityName;
+        String updateTime = weather.basic.update.updateTime.split(" ")[1];
+        String degree = weather.now.temperature + "℃";
+        String weatherInfo = weather.now.more.info;
+
+        titleCityTv.setText(cityName);
+        titleUpdateTimeTv.setText(updateTime);
+        degreeTv.setText(degree);
+        weatherInfoTv.setText(weatherInfo);
+
+        forecastLayout.removeAllViews();
+
+        for (Forecast forecast : weather.forecastList) {
+            View view = LayoutInflater.from(this).inflate(R.layout.forecast_item,
+                    forecastLayout, false);
+            TextView dateTv = view.findViewById(R.id.tv_date);
+            TextView infoTv = view.findViewById(R.id.tv_info);
+            TextView maxTv = view.findViewById(R.id.tv_max);
+            TextView minTv = view.findViewById(R.id.tv_min);
+
+            dateTv.setText(forecast.date);
+            infoTv.setText(forecast.more.info);
+            maxTv.setText(forecast.temperature.max);
+            minTv.setText(forecast.temperature.min);
+
+            forecastLayout.addView(view);
+        }
+
+        if (weather.aqi != null) {
+            aqiTv.setText(weather.aqi.city.aqi);
+            pm25Tv.setText(weather.aqi.city.pm25);
+        }
+
+        String comfort = "舒适度：" + weather.suggestion.comfort.info;
+        String carWash = "洗车指数：" + weather.suggestion.carWash.info;
+        String sport = "运动指数：" + weather.suggestion.sport.info;
+
+        comfortTv.setText(comfort);
+        carWashTv.setText(carWash);
+        sportTv.setText(sport);
+
+        weatherLayout.setVisibility(View.VISIBLE);
+    }
+}

@@ -6,6 +6,8 @@ import android.util.Log;
 import com.example.ming.coolweather.db.City;
 import com.example.ming.coolweather.db.County;
 import com.example.ming.coolweather.db.Province;
+import com.example.ming.coolweather.gson.Weather;
+import com.google.gson.Gson;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -89,5 +91,24 @@ public class Utility {
             }
         }
         return false;
+    }
+
+    /**
+     * 将返回的JSON数据解析成Weather实体类
+     * @param response
+     * @return
+     */
+    public static Weather handleWeatherResponse(String response) {
+        try {
+            JSONObject jsonObject = new JSONObject(response);
+//            Log.d("handleWeatherResponse()", "JSONObject:" + jsonObject.toString());
+            JSONArray jsonArray = jsonObject.getJSONArray("HeWeather");
+            String weatherContent = jsonArray.getJSONObject(0).toString();
+            //直接将JSON数据转换为Weather实体类
+            return new Gson().fromJson(weatherContent, Weather.class);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
