@@ -1,5 +1,6 @@
 package com.example.ming.coolweather;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
@@ -22,6 +23,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.example.ming.coolweather.gson.Forecast;
 import com.example.ming.coolweather.gson.Weather;
+import com.example.ming.coolweather.service.AutoUpdateService;
 import com.example.ming.coolweather.util.HttpUtil;
 import com.example.ming.coolweather.util.Utility;
 
@@ -189,6 +191,15 @@ public class WeatherActivity extends AppCompatActivity {
      * @param weather
      */
     private void showWeatherInfo(Weather weather) {
+
+        if (weather != null && "ok".equals(weather.status)) {
+            Intent intent = new Intent(this, AutoUpdateService.class);
+            startService(intent);
+        } else {
+            Toast.makeText(WeatherActivity.this, "获取天气信息失败",
+                    Toast.LENGTH_SHORT).show();
+        }
+
         String cityName = weather.basic.CityName;
         String updateTime = weather.basic.update.updateTime.split(" ")[1];
         String degree = weather.now.temperature + "℃";
